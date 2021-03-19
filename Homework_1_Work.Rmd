@@ -9,45 +9,22 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
 library(tidyverse)         # for graphing and data cleaning
 ```
 
-```{r data}
-data(mpg) # this dataset is part of an R package
-```
+## Exercise 1: Setting Up Git and Github in rStudio
 
-Just like I did above, at the top of the file, put three R code chunks. The first controls options. Right now I have it commented out (a `#` sign in front), but you should uncomment (remove the `#`) when your document is complete so you don't see messages and warnings. The second loads libraries. It is nice to give a brief description of what the library does to remind yourself why you are loading it. The third loads any data used in the document.
+Create Repository for Assignment 1. Link: [https://github.com/michaelhetlo/Homework_1_ADR]
 
-The yaml section of the document (the part at the very top, between the set of three dashes) is EXTREMELY picky but it also gives you a way to customize your document. If you want to learn more about changing this section see [section 3.1.4](https://bookdown.org/yihui/rmarkdown/html-document.html#appearance-and-style) of the *R Markdown: The Definitive Guide* by Yihui Xie, J. J. Allaire, and Garrett Grolemund.
+## Exercise 2: Create Website
 
-Use headings and subheadings to number your problems, like I've done below.  Leave a space before and after each R code chunk, so code, comments, and output print out nicely. Write in complete sentences to answer your questions. Your comments should clearly reference the R code and output that you include. Do not include R code and output that you don't reference.
+### a) Link of Website
 
-## Exercise 1
+### b) Podcast Reflection
 
-Description of exercise 1 ...
+### c) Custom ggplot2
 
-### a.  
-
-Description of exercise 1a. 
-
-If necessary, explain the code that will be run in the next section (a really easy example, in this case). The following chunk of code adds 2 plus 3.
-
-```{r}
-2 + 3
-```
-
-Afterwords, explain what the results show. For example, as we can see, 2 + 3 is 5. 
-
-### b.
-
-## Exercise 2
-
-### a. 
-
-### b. 
-
-...
