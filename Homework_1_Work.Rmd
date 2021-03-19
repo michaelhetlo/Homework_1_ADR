@@ -13,7 +13,18 @@ knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
-library(tidyverse)         # for graphing and data cleaning
+library(tidyverse)
+library(tidymodels)
+library(naniar)
+library(vip)
+```
+
+```{r theme}
+theme_set(theme_minimal())
+```
+
+```{r data}
+hotels <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-11/hotels.csv')
 ```
 
 ## Exercise 1: Setting Up Git and Github in rStudio
@@ -27,4 +38,8 @@ Create Repository for Assignment 1. Link: [https://github.com/michaelhetlo/Homew
 ### b) Podcast Reflection
 
 ### c) Custom ggplot2
+
+## Exercise 3: Modeling Review and Intro to tidymodels
+
+### a) 
 
