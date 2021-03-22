@@ -17,6 +17,7 @@ library(tidyverse)
 library(tidymodels)
 library(naniar)
 library(vip)
+library(lubridate)
 ```
 
 ```{r theme}
@@ -35,11 +36,123 @@ Create Repository for Assignment 1. Link: [https://github.com/michaelhetlo/Homew
 
 ### a) Link of Website
 
+[https://michaelhelton.netlify.app/]
+
 ### b) Podcast Reflection
+
+NEED TO DO
 
 ### c) Custom ggplot2
 
+OPTIONAL DO IF HAVE TIME
+
 ## Exercise 3: Modeling Review and Intro to tidymodels
 
-### a) 
+### 1. a) Without doing any analysis, what are some variables you think might be predictive and why?
+Hotel (type), arrival_date_month, booking_changes.  Hotel type will be important as individuals traveling for work related purposes I assume will be less likely to cancel reservations, while people on vacation would be more likely to cancel.  So I think 'City Hotel' will have less cancellations. arrival_date_month might be predictive for the same reason as hotel, trying to figure out who is traveling for work versus pleasure.  booking_changes, I assume the higher the changes the less likely someone is to cancel, as the reason they might cancel is less strict because they are booking around it rather than something that comes up that makes it impossible to go.
+
+### b) What are some problems that might exist with the data? You might think about how it was collected and who did the collecting.
+?
+
+### c) If we construct a model, what type of conclusions will be able to draw from it? 
+If families or individuals are more likely to cancel, times of year people are more likely to cancel.  I don't think we will find causation of why things are canceled or not, but we should be able to find some trends of when things are more likely canceled. 
+
+### 2. Create some exploratory plots or table summaries of the data, concentrating most on relationships with the response variable. Keep in mind the response variable is numeric, 0 or 1. You may want to make it categorical (you also may not). Be sure to also examine missing values or other interesting values.
+
+```{r}
+hotels %>%
+  group_by(is_canceled) %>%
+  summarise(total = n())
+```
+
+```{r, fig.width=20}
+hotels %>%
+  filter(is_canceled == 1) %>%
+  ggplot(aes(x= arrival_date_month)) +
+  geom_bar()
+```
+
+Summer months show increase.
+
+### 3. Mutations.
+
+```{r}
+hotels_mod <- hotels %>% 
+  mutate(is_canceled = as.factor(is_canceled)) %>% 
+  mutate(across(where(is.character), as.factor)) %>% 
+  select(-arrival_date_year,
+         -reservation_status,
+         -reservation_status_date) %>% 
+  add_n_miss() %>% 
+  filter(n_miss_all == 0) %>% 
+  select(-n_miss_all)
+
+set.seed(494)
+```
+
+```{r}
+hotels_split <- initial_split(hotels_mod, prop = .5)
+```
+
+```{r}
+hotels_training <- training(hotels_split)
+hotels_testing <- testing(hotels_split)
+```
+
+```{r}
+hotels_recipe <- recipe(is.canceled ~ ., 
+                       data = house_training) %>% 
+  step_mutate(children_ind = ifelse(children == 0, 0, 1),
+              babies_ind = ifelse(babies == 0, 0, 1),
+              previous_cancellations_ind = ifelse(previous_cancellations == 0, 0, 1),
+              agent_ind = ifelse(agent = NULL, 0, 1),
+              company_ind = ifelse(company = NULL, 0, 1)) %>%
+  
+  
+  step_mutate(grade = as.character(grade),
+              grade = fct_relevel(
+                        case_when(
+                          grade %in% "1":"6"   ~ "below_average",
+                          grade %in% "10":"13" ~ "high",
+                          TRUE ~ grade
+                        ),
+                        "below_average","7","8","9","high"),
+              basement = as.numeric(sqft_basement == 0),
+              renovated = as.numeric(yr_renovated == 0),
+              view = as.numeric(view == 0),
+              waterfront = as.numeric(waterfront),
+              age_at_sale = year(date) - yr_built)%>% 
+  # Remove sqft_basement, yr_renovated, and yr_built
+  step_rm(sqft_basement, 
+          yr_renovated, 
+          yr_built) %>% 
+  # Create a month variable
+  step_date(date, 
+            features = "month") %>% 
+  # Make these evaluative variables, not included in modeling
+  update_role(all_of(c("id",
+                       "date",
+                       "zipcode", 
+                       "lat", 
+                       "long")),
+              new_role = "evaluative") %>% 
+  # Create indicator variables for factors/character/nominal
+  # explicitly remove outcome, even though outcome isn't nominal
+  # this is important in cases when we have a nominal output (eg. logistic)
+  step_dummy(all_nominal(), 
+             -all_outcomes(), 
+             -has_role(match = "evaluative")) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal())
+```
+
+
+
+
+
+
+
+
+
+
 
