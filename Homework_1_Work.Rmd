@@ -100,13 +100,29 @@ hotels_testing <- testing(hotels_split)
 ```
 
 ```{r}
+fix_small <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 0,0,1)))
+fix_agents <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 'NULL',0,1)))
+
+test <- hotels_mod %>%
+  mutate_at(c('children', 'babies', 'previous_cancellations'), fix_small) %>%
+  mutate_at(c('agent', 'company'), fix_agents) %>%
+  mutate(country = fct_lump_n(country, n = 5)) %>%
+  select(children, babies, previous_cancellations, agent, company, country)
+```
+
+
+```{r}
+fix_small <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 0,0,1)))
+fix_agents <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 'NULL',0,1)))
+
 hotels_recipe <- recipe(is.canceled ~ ., 
-                       data = house_training) %>% 
-  step_mutate(children_ind = ifelse(children == 0, 0, 1),
-              babies_ind = ifelse(babies == 0, 0, 1),
-              previous_cancellations_ind = ifelse(previous_cancellations == 0, 0, 1),
-              agent_ind = ifelse(agent = NULL, 0, 1),
-              company_ind = ifelse(company = NULL, 0, 1)) %>%
+                       data = house_training) %>%
+  step_mutate_at(c('children', 'babies', 'previous_cancellations'), fix_small) %>%
+  step_mutate_at(c('agent', 'company'), fix_agents) %>%
+  step_mutate(country = fct_lump_n(country, n = 5)) %>%
+  step_normalize(all_nominal()) %>%
+  step_dummy(all_predictors(), 
+             -all_outcomes())
   
   
   step_mutate(grade = as.character(grade),
