@@ -110,62 +110,61 @@ test <- hotels_mod %>%
   select(children, babies, previous_cancellations, agent, company, country)
 ```
 
-
 ```{r}
-fix_small <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 0,0,1)))
-fix_agents <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 'NULL',0,1)))
-
-hotels_recipe <- recipe(is.canceled ~ ., 
-                       data = house_training) %>%
-  step_mutate_at(c('children', 'babies', 'previous_cancellations'), fix_small) %>%
-  step_mutate_at(c('agent', 'company'), fix_agents) %>%
+hotels_recipe <- recipe(is_canceled ~ ., 
+                       data = hotels_training) %>%
+  step_mutate(children = as.factor(ifelse(children == 0, 0,1)),
+              babies = as.factor(ifelse(babies == 0, 0,1)),
+              previous_cancellations = as.factor(ifelse(previous_cancellations == 0, 0,1))) %>%
+  step_mutate(agent = as.factor(ifelse(agent == 'NULL', 0,1)),
+              company = as.factor(ifelse(company == 'NULL', 0,1))) %>%
   step_mutate(country = fct_lump_n(country, n = 5)) %>%
-  step_normalize(all_outcomes(),-all_nominal()) %>%
+  step_normalize(all_predictors(),-all_nominal()) %>%
   step_dummy(all_nominal(), 
              -all_outcomes())
-  
-  
-  step_mutate(grade = as.character(grade),
-              grade = fct_relevel(
-                        case_when(
-                          grade %in% "1":"6"   ~ "below_average",
-                          grade %in% "10":"13" ~ "high",
-                          TRUE ~ grade
-                        ),
-                        "below_average","7","8","9","high"),
-              basement = as.numeric(sqft_basement == 0),
-              renovated = as.numeric(yr_renovated == 0),
-              view = as.numeric(view == 0),
-              waterfront = as.numeric(waterfront),
-              age_at_sale = year(date) - yr_built)%>% 
-  # Remove sqft_basement, yr_renovated, and yr_built
-  step_rm(sqft_basement, 
-          yr_renovated, 
-          yr_built) %>% 
-  # Create a month variable
-  step_date(date, 
-            features = "month") %>% 
-  # Make these evaluative variables, not included in modeling
-  update_role(all_of(c("id",
-                       "date",
-                       "zipcode", 
-                       "lat", 
-                       "long")),
-              new_role = "evaluative") %>% 
-  # Create indicator variables for factors/character/nominal
-  # explicitly remove outcome, even though outcome isn't nominal
-  # this is important in cases when we have a nominal output (eg. logistic)
-  step_dummy(all_nominal(), 
-             -all_outcomes(), 
-             -has_role(match = "evaluative")) %>% 
-  step_normalize(all_predictors(), 
-                 -all_nominal())
 ```
 
+```{r}
+hotels_recipe %>%
+  prep(hotels_training) %>%
+  juice()
+```
 
+```{r}
+set.seed(494)
+hotel_cv <- vfold_cv(hotels_training, v = 5)
+```
 
+```{r}
+hotel_lasso_mod <- 
+  linear_reg(mixture = 1) %>%
+  set_args(penalty = tune()) %>% 
+  set_engine("glmnet") %>% 
+  set_mode("regression")
+```
 
+```{r}
+hotel_lasso_wf <-
+  workflow() %>%
+  add_recipe(hotels_recipe) %>%
+  add_model(hotel_lasso_mod)
 
+hotel_lasso_wf
+```
+
+```{r}
+penalty_grid <- grid_regular(penalty(), levels = 10)
+
+penalty_grid
+```
+
+```{r}
+hotel_lass_tune <- hotel_lasso_wf %>%
+  tune_grid(resamples = hotel_cv,
+            grid = penalty_grid)
+
+hotel_lass_tune
+```
 
 
 
