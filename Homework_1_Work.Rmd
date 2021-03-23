@@ -120,8 +120,8 @@ hotels_recipe <- recipe(is.canceled ~ .,
   step_mutate_at(c('children', 'babies', 'previous_cancellations'), fix_small) %>%
   step_mutate_at(c('agent', 'company'), fix_agents) %>%
   step_mutate(country = fct_lump_n(country, n = 5)) %>%
-  step_normalize(all_nominal()) %>%
-  step_dummy(all_predictors(), 
+  step_normalize(all_outcomes(),-all_nominal()) %>%
+  step_dummy(all_nominal(), 
              -all_outcomes())
   
   
