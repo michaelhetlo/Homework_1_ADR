@@ -40,11 +40,7 @@ Create Repository for Assignment 1. Link: [https://github.com/michaelhetlo/Homew
 
 ### b) Podcast Reflection
 
-NEED TO DO
-
-### c) Custom ggplot2
-
-OPTIONAL DO IF HAVE TIME
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ## Exercise 3: Modeling Review and Intro to tidymodels
 
@@ -52,7 +48,7 @@ OPTIONAL DO IF HAVE TIME
 Hotel (type), arrival_date_month, booking_changes.  Hotel type will be important as individuals traveling for work related purposes I assume will be less likely to cancel reservations, while people on vacation would be more likely to cancel.  So I think 'City Hotel' will have less cancellations. arrival_date_month might be predictive for the same reason as hotel, trying to figure out who is traveling for work versus pleasure.  booking_changes, I assume the higher the changes the less likely someone is to cancel, as the reason they might cancel is less strict because they are booking around it rather than something that comes up that makes it impossible to go.
 
 ### b) What are some problems that might exist with the data? You might think about how it was collected and who did the collecting.
-?
+Redundant variables, 'is_canceled' and 'reservation_status' for terms of modeling having the extra variable can cause issues.  Lack of id's for each booking is slightly annoying due to possibility compressing multiple reservations into one booking.  I am also unsure of how some variables were collected such as previous booking/cancellation data. 
 
 ### c) If we construct a model, what type of conclusions will be able to draw from it? 
 If families or individuals are more likely to cancel, times of year people are more likely to cancel.  I don't think we will find causation of why things are canceled or not, but we should be able to find some trends of when things are more likely canceled. 
@@ -61,18 +57,22 @@ If families or individuals are more likely to cancel, times of year people are m
 
 ```{r}
 hotels %>%
-  group_by(is_canceled) %>%
+  group_by(previous_cancellations) %>%
   summarise(total = n())
 ```
 
-```{r, fig.width=20}
+```{r}
 hotels %>%
-  filter(is_canceled == 1) %>%
-  ggplot(aes(x= arrival_date_month)) +
-  geom_bar()
+  add_n_miss() %>%
+  filter(n_miss_all != 0) %>%
+  select(children)
 ```
 
-Summer months show increase.
+```{r}
+hotels %>%
+  ggplot(aes(x = customer_type, fill = hotel)) +
+  geom_bar()
+```
 
 ### 3. Mutations.
 
@@ -91,7 +91,7 @@ set.seed(494)
 ```
 
 ```{r}
-hotels_split <- initial_split(hotels_mod, prop = .5)
+hotels_split <- initial_split(hotels_mod, prop = .5, strata = 'is_canceled')
 ```
 
 ```{r}
@@ -99,22 +99,13 @@ hotels_training <- training(hotels_split)
 hotels_testing <- testing(hotels_split)
 ```
 
-```{r}
-fix_small <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 0,0,1)))
-fix_agents <- function(x, na.rm=TRUE) (as.factor(ifelse(x == 'NULL',0,1)))
-
-test <- hotels_mod %>%
-  mutate_at(c('children', 'babies', 'previous_cancellations'), fix_small) %>%
-  mutate_at(c('agent', 'company'), fix_agents) %>%
-  mutate(country = fct_lump_n(country, n = 5)) %>%
-  select(children, babies, previous_cancellations, agent, company, country)
-```
+### 4. Pre-processing
 
 ```{r}
 hotels_recipe <- recipe(is_canceled ~ ., 
                        data = hotels_training) %>%
-  step_mutate(children = as.factor(ifelse(children == 0, 0,1)),
-              babies = as.factor(ifelse(babies == 0, 0,1)),
+  step_mutate(children = as.factor(ifelse(children == 0,0,1)),
+              babies = as.factor(ifelse(babies == 0,0,1)),
               previous_cancellations = as.factor(ifelse(previous_cancellations == 0, 0,1))) %>%
   step_mutate(agent = as.factor(ifelse(agent == 'NULL', 0,1)),
               company = as.factor(ifelse(company == 'NULL', 0,1))) %>%
@@ -123,6 +114,11 @@ hotels_recipe <- recipe(is_canceled ~ .,
   step_dummy(all_nominal(), 
              -all_outcomes())
 ```
+
+### 5. Recipe Building.
+
+#### In general, why would we want to use LASSO instead of regular logistic regression? (HINT: think about what happens to the coefficients).
+We can avoid over fitting the model to the test data, by compressing and using less variable outcomes.
 
 ```{r}
 hotels_recipe %>%
@@ -137,10 +133,10 @@ hotel_cv <- vfold_cv(hotels_training, v = 5)
 
 ```{r}
 hotel_lasso_mod <- 
-  linear_reg(mixture = 1) %>%
+  logistic_reg(mixture = 1) %>%
   set_args(penalty = tune()) %>% 
   set_engine("glmnet") %>% 
-  set_mode("regression")
+  set_mode("classification")
 ```
 
 ```{r}
@@ -151,6 +147,8 @@ hotel_lasso_wf <-
 
 hotel_lasso_wf
 ```
+
+### 6. Tuning. 
 
 ```{r}
 penalty_grid <- grid_regular(penalty(), levels = 10)
@@ -165,6 +163,141 @@ hotel_lass_tune <- hotel_lasso_wf %>%
 
 hotel_lass_tune
 ```
+
+```{r}
+
+```
+
+```{r}
+hotel_lass_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "accuracy") %>% 
+  ggplot(aes(x = penalty, y = mean)) +
+  geom_point() +
+  geom_line() +
+  scale_x_log10(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10",scales::math_format(10^.x))) +
+  labs(x = "penalty", y = "accuracy")
+```
+
+```{r}
+hotel_lass_tune %>%
+  show_best(metric = 'accuracy')
+
+hotel_lass_tune %>%
+  show_best()
+```
+
+
+```{r}
+best_param <- hotel_lass_tune %>% 
+  select_best(metric = "accuracy")
+
+best_param
+```
+
+```{r}
+hotel_lasso_final_mod <- hotel_lasso_final_wf %>% 
+  fit(data = hotels_training)
+
+hotel_lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy() 
+```
+
+#### Are there some variables with coefficients of 0?
+Yes. 'arrival_date_month_September', 'assigned_room_type_L', 'market_segment_Groups', 'market_segment_Undefined', 'distribution_channel_Undefined'.
+
+### 7. Testing and Evaluation
+
+```{r}
+hotel_lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  vip()
+```
+
+#### Which variables show up as the most important? Are you surprised?
+'reserved_room_type_P', 'deposit_type_Non.Refund', 'assigned_room_type_l'.  Why does room type reserved and assigned matter so much?
+
+```{r}
+hotel_lasso_final_wf <- hotel_lasso_wf %>% 
+  finalize_workflow(best_param)
+hotel_lasso_final_wf
+```
+
+```{r}
+hotel_lasso_test <- hotel_lasso_final_wf %>% 
+  last_fit(hotels_split)
+
+hotel_lasso_test %>% 
+  collect_metrics()
+```
+
+####  How do they compare to the cross-validated metrics?
+Test accuracy is .002 higher than my CV metrics on average.  And 'roc_auc' is about .001 higher.
+
+```{r}
+preds <- collect_predictions(hotel_lasso_test)
+```
+
+```{r}
+preds %>%
+  conf_mat(is_canceled, .pred_class)
+```
+
+#### What is the true positive rate (sensitivity)? What is the true negative rate (specificity)?
+True positive rate = 65%.
+True negative rate = 91%.
+
+```{r}
+preds %>%
+  ggplot(aes(x=.pred_1, fill = is_canceled)) + 
+  geom_density(alpha = .5, color = NA)
+```
+
+#### a. What would this graph look like for a model with an accuracy that was close to 1? 
+There would be very high density peaks at 0 and 1, and very little to no density in the middle. 
+
+#### b. Our predictions are classified as canceled if their predicted probability of canceling is greater than .5. If we wanted to have a high true positive rate, should we make the cutoff for predicted as canceled higher or lower than .5? 
+Higher cutoff would lead to a higher true positive rate, as the model would only predict cancellations on cases it is very sure of. 
+
+#### c. What happens to the true negative rate if we try to get a higher true positive rate?
+The true negative would decrease. 
+
+### 8. Let’s say that this model is going to be applied to bookings 14 days in advance of their arrival at each hotel, and someone who works for the hotel will make a phone call to the person who made the booking. During this phone call, they will try to assure that the person will be keeping their reservation or that they will be canceling in which case they can do that now and still have time to fill the room. How should the hotel go about deciding who to call? How could they measure whether it was worth the effort to do the calling? Can you think of another way they might use the model?
+If the hotel is going to call someone, the model should be overwhelmingly certain that the person is likely to cancel.  The cutoff would have to be such that the true positive rate is very high, so the hotel isn't calling people who aren't likely to cancel.  Measure success if the rooms of the people who cancel from that call are getting filled within the 14 days after the call.  Determining what travel agents and companies have the most reliable customers, if the contracts they have are worth while for them to keep.
+
+### 9. How might you go about questioning and evaluating the model in terms of fairness? Are there any questions you would like to ask of the people who collected the data?
+Country of origin could be problematic, as well discrimination based on number of children could be an issue.  I am also confused on how cancellation and reservation data was collected.  If it was based on website booking or travel agents, then those people using those services would be unfairly deemed as less reliable because they have a record.  Whereas people who don't have those online records won't have the same issues. 
+
+## Bias and Fairness
+
+#### Did you hear anything that surprised you?
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#### Why is it important that we pay attention to bias and fairness when studying data science?
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#### Is there a type of bias Dr. Thomas discussed that was new to you? Can you think about places you have seen these types of biases?
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
