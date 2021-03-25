@@ -193,6 +193,12 @@ best_param
 ```
 
 ```{r}
+hotel_lasso_final_wf <- hotel_lasso_wf %>% 
+  finalize_workflow(best_param)
+hotel_lasso_final_wf
+```
+
+```{r}
 hotel_lasso_final_mod <- hotel_lasso_final_wf %>% 
   fit(data = hotels_training)
 
@@ -214,12 +220,6 @@ hotel_lasso_final_mod %>%
 
 #### Which variables show up as the most important? Are you surprised?
 'reserved_room_type_P', 'deposit_type_Non.Refund', 'assigned_room_type_l'.  Why does room type reserved and assigned matter so much?
-
-```{r}
-hotel_lasso_final_wf <- hotel_lasso_wf %>% 
-  finalize_workflow(best_param)
-hotel_lasso_final_wf
-```
 
 ```{r}
 hotel_lasso_test <- hotel_lasso_final_wf %>% 
