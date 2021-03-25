@@ -39,8 +39,7 @@ Create Repository for Assignment 1. Link: [https://github.com/michaelhetlo/Homew
 [https://michaelhelton.netlify.app/]
 
 ### b) Podcast Reflection
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+The podcast hosts talked about the importance of having projects you have worked on readily available to you for things like job interviews and networking.  They talked about the importance of having expierences to bring up if interviewers talk about struggles or breakthroughs you've had on projects in the field. Creating a website to house my old, new and current projects will be a good place to store them for the future when I am looking to apply to jobs, and can have this website as a resume of sorts to show off.
 
 ## Exercise 3: Modeling Review and Intro to tidymodels
 
@@ -165,10 +164,6 @@ hotel_lass_tune
 ```
 
 ```{r}
-
-```
-
-```{r}
 hotel_lass_tune %>% 
   collect_metrics() %>% 
   filter(.metric == "accuracy") %>% 
@@ -274,16 +269,13 @@ Country of origin could be problematic, as well discrimination based on number o
 ## Bias and Fairness
 
 #### Did you hear anything that surprised you?
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+When responding to the first question from the audience, Dr. Thomas brings up that machine learning has only focused on how to obtain large amounts of data efficiently rather than looking at how the data is obtained and the structure of the data itself.  This was an interesting point I hadn't thought about before, the topic of ensuring test data matches training data.  I guess I hadn't thought about it before because I work with data sets from MLB the most and there isn't that much difference year to year in outcomes. 
 
 #### Why is it important that we pay attention to bias and fairness when studying data science?
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+It's important to pay attention to bias and fairness because that work data scientists do can have large impacts on people's lives, for example models that predict recidivism send can keep people in jail based on factors that have nothing to do with the individual due to large amounts of bias built into the process. The outcomes of these models can prevent freedom from people.  On a smaller scale we have to make sure our model does what we want it do.  We want the model to be fair across and points in the data so we must make sure there isn't a large bias towards a subsection of our data set. 
 
 #### Is there a type of bias Dr. Thomas discussed that was new to you? Can you think about places you have seen these types of biases?
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Representation bias.  I saw a lot of these types of biases when working over last summer.  I was working on predicting account viability, the database had something like 10% that were not viable accounts that I was trying to predict would not be viable.  I made a model and was impressed with myself that I got it up to 90 some odd percent accuracy.  Until I went back and looked at the confusion matrix and saw that it was predicting almost all accounts to be viable, so it was really bad at predicting non-viable accounts.  I eventually got around this by constructing a dataset that was 50-50 viable to non-viable, and quickly saw that my model in actual terms sucked. 
 
 
 
